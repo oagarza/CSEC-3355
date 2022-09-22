@@ -1,0 +1,55 @@
+from signal import signal, SIGTERM, SIGHUP, pause
+from rpi_lcd import LCD
+import time
+import datetime
+from datetime import datetime as dt2
+import subprocess
+#from pytz import timezone
+import pytz
+
+lcd = LCD()
+
+def execute_unix(inputcommand):
+   p = subprocess.Popen(inputcommand, stdout=subprocess.PIPE, shell=True)
+   (output, err) = p.communicate()
+   return output 
+def safe_exit(signum, frame):
+    exit(1)
+
+while True:
+    t = time.time()
+    ### time_current = time.strftime("%H:%M:%S", time.gmtime(t))
+    my_datetime = dt2.now(datetime.timezone.utc)
+    ### my_datetime_cst = my_datetime.astimezone(pytz.timezone('US/Central')).strftime('%Y-%m-%d %H:%M:%S %Z%z')
+    my_datetime_cst_1 = my_datetime.astimezone(pytz.timezone('US/Central')).strftime('%B %d')
+    my_datetime_cst_2 = my_datetime.astimezone(pytz.timezone('US/Central')).strftime('%H:%M:%S')
+    print(my_datetime)
+    print(my_datetime_cst_1)
+    print(my_datetime_cst_2)
+
+    try:
+
+        # Display date and time in LCD
+        lcd.text(my_datetime_cst_1, 1)
+        lcd.text(my_datetime_cst_2, 2)
+        
+        # Create Phonic Messages
+        msg_1 = 'espeak -ven+m3 -k5 -s150 --punct="<characters>" "%s" 2>>/dev/null' % my_datetime_cst_1 #speak aloud
+        msg_2 = 'espeak -ven+m3 -k5 -s150 --punct="<characters>" "%s" 2>>/dev/null' % my_datetime_cst_2 #speak aloud
+        
+        # Execute Phonetic Messages
+        execute_unix(msg_1) 
+        execute_unix(msg_2)
+
+        signal(SIGTERM, safe_exit)
+        signal(SIGHUP, safe_exit)
+
+
+        #time.sleep()
+        pause()
+
+    except KeyboardInterrupt:
+        pass
+
+    finally:
+        lcd.clear()
